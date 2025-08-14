@@ -2,27 +2,31 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Nodemailer transporter setup (example for Gmail)
+// ==== Serve frontend static files ====
+app.use(express.static(path.join(__dirname, 'public'))); // "public" me HTML, CSS, JS rakho
+
+// ==== Nodemailer transporter setup ====
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.MAIL_USER,      // your gmail address
-    pass: process.env.MAIL_PASS       // your gmail app password
+    user: process.env.MAIL_USER,      // Gmail address
+    pass: process.env.MAIL_PASS       // Gmail app password
   }
 });
 
-// Contact form endpoint
+// ==== Contact form endpoint ====
 app.post('/api/contact', async (req, res) => {
   const { name, email, phone, message } = req.body;
   try {
     await transporter.sendMail({
       from: `"${name}" <${email}>`,
-      to: process.env.MAIL_TO, // your receiving email
+      to: process.env.MAIL_TO, // Your receiving email
       subject: `New Contact Form Submission from ${name}`,
       text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\nMessage: ${message}`,
       html: `<p><strong>Name:</strong> ${name}</p>
@@ -37,6 +41,13 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
-app.listen(3001, () => {
-  console.log('Server running on http://localhost:3001');
+// ==== Root route to serve index.html ====
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// ==== PORT for Render ====
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
